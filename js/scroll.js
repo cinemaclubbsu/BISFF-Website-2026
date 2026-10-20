@@ -20,12 +20,23 @@
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // Phones and tablets (touch screens).
+  const isTouch = window.matchMedia("(pointer: coarse)").matches || ScrollTrigger.isTouch === 1;
+
+  // --- Touch scrolling ------------------------------------------------------
+  // On phones, let GSAP handle the scrolling itself so it stays exactly in step with the pinned sections
+  // (otherwise iPhones can stutter where a section starts holding still). This also keeps Safari's toolbar
+  // from sliding in and out mid-animation, which changes the screen height. When the screen height does
+  // change only because a toolbar moved, don't re-measure everything (that causes jumps).
+  ScrollTrigger.config({ ignoreMobileResize: true });
+  if (isTouch) ScrollTrigger.normalizeScroll(true);
+
   // --- Smooth scrolling (Lenis) -------------------------------------------
   // Mouse wheel and trackpad scrolling glide instead of jumping. The browser's normal scrolling stays
   // underneath, so the keyboard, scrollbar, find-in-page and in-page links all work as usual.
-  // Phones keep their own native touch scrolling. Off for visitors who ask for reduced motion.
+  // Only on computers (touch scrolling is handled above). Off for visitors who ask for reduced motion.
   let lenis = null;
-  if (window.Lenis && !reduceMotion) {
+  if (window.Lenis && !reduceMotion && !isTouch) {
     lenis = new Lenis({ autoRaf: false, anchors: true, lerp: 0.1 });
     lenis.on("scroll", ScrollTrigger.update);       // keep the scroll animations in step with the glide
     gsap.ticker.add(function (time) { lenis.raf(time * 1000); });
@@ -64,12 +75,16 @@
   }
 
   if (blurb) {
+    // Recolors just the page background and the two sections that sit on it (cheaper on phones than
+    // changing a page-wide color setting, which makes the browser restyle everything on every frame).
+    const fadeDuration = reduceMotion ? 0 : 1;
+    const stripSection = document.querySelector(".strip");
     darkFade = gsap.timeline({ paused: true, onUpdate: function () { updateColumns(); } });
-    darkFade.fromTo(
-      root,
-      { "--page-bg": "#fff8e8", "--page-fg": "#000000" },
-      { "--page-bg": "#000000", "--page-fg": "#fff8e8", duration: reduceMotion ? 0 : 1, ease: "power1.inOut" }
-    );
+    darkFade
+      .fromTo(document.body, { backgroundColor: "#fff8e8" }, { backgroundColor: "#000000", duration: fadeDuration, ease: "power1.inOut" }, 0)
+      .fromTo([blurb, stripSection].filter(Boolean),
+        { backgroundColor: "#fff8e8", color: "#000000" },
+        { backgroundColor: "#000000", color: "#fff8e8", duration: fadeDuration, ease: "power1.inOut" }, 0);
   }
 
   if (blurb && !reduceMotion) {
@@ -88,6 +103,7 @@
         start: "top top",
         end: function () { return "+=" + Math.round(window.innerHeight * PIN_SCREENS); },
         pin: true,
+        anticipatePin: 1, // switch into place a hair early so it doesn't jump on fast scrolls
         scrub: 0.5,
         invalidateOnRefresh: true,
         onUpdate: function (self) { setDark(self.progress >= DARK_AT); },
@@ -224,6 +240,7 @@
           start: "top top",
           end: function () { return "+=" + Math.round(window.innerHeight * EVENT_SCREENS); },
           pin: true,
+          anticipatePin: 1,
           scrub: 0.8,
           invalidateOnRefresh: true,
           onUpdate: function (self) {
