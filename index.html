@@ -165,12 +165,14 @@
         <!-- Wipe layer: a cream panel revealed left to right, covering the lines and text, then
              "Free to the public" fades in at the center (js/scroll.js). -->
         <div class="event__wipe">
-          <p class="event__free">Free to the public</p>
-          <!-- The letters pull together into the red square, which grows to fill the screen; then the black
-               square grows out of its middle until the screen is black (js/scroll.js). -->
-          <div class="event__squares" aria-hidden="true">
-            <span class="event__sq event__sq--red"></span>
-            <span class="event__sq event__sq--black"></span>
+          <div class="event__wipe-inner">
+            <p class="event__free">Free to the public</p>
+            <!-- The letters pull together into the red square, which grows to fill the screen; then the black
+                 square grows out of its middle until the screen is black (js/scroll.js). -->
+            <div class="event__squares" aria-hidden="true">
+              <span class="event__sq event__sq--red"></span>
+              <span class="event__sq event__sq--black"></span>
+            </div>
           </div>
         </div>
       </section>

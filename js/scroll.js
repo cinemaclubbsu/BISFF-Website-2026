@@ -108,7 +108,7 @@
         end: function () { return "+=" + Math.round(window.innerHeight * PIN_SCREENS); },
         pin: true,
         anticipatePin: 1, // switch into place a hair early so it doesn't jump on fast scrolls
-        scrub: onPhone(0.15, 0.5),
+        scrub: onPhone(0.3, 0.5),
         invalidateOnRefresh: true,
         onUpdate: function (self) { setDark(self.progress >= DARK_AT); },
       },
@@ -143,6 +143,7 @@
   const eventSection = document.querySelector(".event");
   const eventInfo = eventSection && eventSection.querySelector(".event__info");
   const eventWipe = eventSection && eventSection.querySelector(".event__wipe");
+  const eventWipeInner = eventSection && eventSection.querySelector(".event__wipe-inner");
   const eventFree = eventSection && eventSection.querySelector(".event__free");
   const vLines = eventSection ? eventSection.querySelectorAll(".event__line--v") : [];
   const hLines = eventSection ? eventSection.querySelectorAll(".event__line--h") : [];
@@ -236,7 +237,11 @@
 
       gsap.set(vLines, { scaleY: 0 });
       gsap.set(hLines, { scaleX: 0 });
-      gsap.set(eventWipe, { clipPath: "inset(0% 100% 0% 0%)" });
+      // The cream panel slides in from the left while its contents slide the opposite way, so the contents
+      // stay put and appear to be revealed (smoother on phones than cutting the panel to shape each frame).
+      // (x: 0 replaces the CSS starting offset, so it isn't counted twice.)
+      gsap.set(eventWipe, { x: 0, xPercent: -100 });
+      gsap.set(eventWipeInner, { x: 0, xPercent: 100 });
       let eventTl = null;
       eventTl = gsap.timeline({
         scrollTrigger: {
@@ -245,7 +250,7 @@
           end: function () { return "+=" + Math.round(window.innerHeight * EVENT_SCREENS); },
           pin: true,
           anticipatePin: 1,
-          scrub: onPhone(0.2, 0.8),
+          scrub: onPhone(0.35, 0.8),
           invalidateOnRefresh: true,
           onUpdate: function (self) {
             if (eventTl) showFree(self.progress >= eventTl.labels.wiped / eventTl.duration());
@@ -257,7 +262,9 @@
         .to(vLines, { scaleY: 1, duration: 0.4, ease: "power2.inOut", stagger: lineStagger })
         .to(hLines, { scaleX: 1, duration: 0.4, ease: "power2.inOut", stagger: lineStagger }, "-=0.15")
         .to({}, { duration: 0.2 }) // hold on the finished grid
-        .to(eventWipe, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.6, ease: "power2.inOut" }) // cream wipe
+        .addLabel("wipe")
+        .to(eventWipe, { xPercent: 0, duration: 0.6, ease: "power2.inOut" }, "wipe") // cream wipe, left to right
+        .to(eventWipeInner, { xPercent: 0, duration: 0.6, ease: "power2.inOut" }, "wipe")
         .addLabel("wiped")
         .to({}, { duration: 0.5 }) // "Free to the public" fades in here, then holds
         // Letters pull into the center and shrink away as the small red square appears there.
@@ -336,7 +343,7 @@
         trigger: strip,
         start: "top 45%",      // starts once the strip is well onto the screen (the page is black by then)
         end: "bottom bottom",  // last row lands as the end of the strip reaches the bottom of the screen
-        scrub: reduceMotion ? true : onPhone(0.15, 0.6),
+        scrub: reduceMotion ? true : onPhone(0.3, 0.6),
       },
     });
     // Each row starts one step after the row above it; left and right squares in a row go together.
@@ -396,26 +403,38 @@
         trigger: strip,
         start: "bottom bottom", // right as the last row of squares has appeared
         end: "bottom 15%",
-        scrub: onPhone(0.15, 0.6),
+        scrub: onPhone(0.3, 0.6),
         invalidateOnRefresh: true, // re-measure the squares after a resize
       },
+    });
+
+    // The pieces are laid out once at their finished size and position; the animation only slides and
+    // stretches them (transforms), which phones can do smoothly without re-measuring the page every frame.
+    function placePaint() {
+      const L = leftSq(), R = rightSq(), h = half(), up = growUp(), down = growDown();
+      gsap.set(paintLeft, { left: 0, top: L.top, width: h + 1, height: L.size });
+      gsap.set(paintRight, { left: h - 1, top: R.top, width: h + 1, height: R.size });
+      gsap.set(paintBar, { top: L.top - up, height: L.size + up + down }); // full width comes from the CSS
+    }
+    placePaint();
+    ScrollTrigger.addEventListener("refresh", function () {
+      placePaint();
+      paint.invalidate(); // re-work-out the start sizes for the new layout
+      if (paint.scrollTrigger) paint.progress(paint.scrollTrigger.progress);
     });
 
     // 1. Stretch: red pieces start exactly on top of the two bottom squares, then reach the edges and the middle.
     paint.fromTo([paintLeft, paintRight], { opacity: 0 }, { opacity: 1, duration: 0.01 }, 0);
     paint.fromTo(
       paintLeft,
-      { left: function () { return leftSq().left; }, top: function () { return leftSq().top; },
-        width: function () { return leftSq().size; }, height: function () { return leftSq().size; } },
-      { left: 0, width: function () { return half() + 1; }, duration: STRETCH, ease: "power2.inOut", immediateRender: false },
+      { x: function () { return leftSq().left; }, scaleX: function () { return leftSq().size / (half() + 1); }, transformOrigin: "0% 50%" },
+      { x: 0, scaleX: 1, duration: STRETCH, ease: "power2.inOut", immediateRender: false },
       0
     );
     paint.fromTo(
       paintRight,
-      { left: function () { return rightSq().left; }, top: function () { return rightSq().top; },
-        width: function () { return rightSq().size; }, height: function () { return rightSq().size; } },
-      { left: function () { return half() - 1; }, width: function () { return half() + 1; },
-        duration: STRETCH, ease: "power2.inOut", immediateRender: false },
+      { x: function () { return rightSq().left - (half() - 1); }, scaleX: function () { return rightSq().size / (half() + 1); }, transformOrigin: "0% 50%" },
+      { x: 0, scaleX: 1, duration: STRETCH, ease: "power2.inOut", immediateRender: false },
       0
     );
 
@@ -423,14 +442,12 @@
     paint.fromTo(paintBar, { opacity: 0 }, { opacity: 1, duration: 0.01 }, STRETCH);
     paint.fromTo(
       paintBar,
-      { top: function () { return leftSq().top; }, height: function () { return leftSq().size; } }, // full width comes from the CSS
       {
-        top: function () { return leftSq().top - growUp(); },
-        height: function () { return leftSq().size + growUp() + growDown(); },
-        duration: FILL,
-        ease: "power2.in",
-        immediateRender: false,
+        y: function () { return growUp(); },
+        scaleY: function () { const s = leftSq().size; return s / (s + growUp() + growDown()); },
+        transformOrigin: "50% 0%",
       },
+      { y: 0, scaleY: 1, duration: FILL, ease: "power2.in", immediateRender: false },
       STRETCH
     );
   }

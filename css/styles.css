@@ -513,7 +513,8 @@ body,
   margin-bottom: 0.45em;
 }
 
-/* Wipe layer: a cream panel revealed left to right by js/scroll.js (clip-path), covering the grid and text.
+/* Wipe layer: a cream panel revealed left to right by js/scroll.js (the panel slides in while its contents slide
+   the other way, so they stay put), covering the grid and text.
    Red on cream is ~3.8:1: fine here because the heading is large, bold text. */
 .event__wipe {
   position: absolute;
@@ -525,8 +526,19 @@ body,
   color: var(--red);
 }
 
+.event__wipe-inner {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
 .anim .event__wipe {
-  clip-path: inset(0 100% 0 0); /* hidden until the wipe */
+  transform: translateX(-100%); /* hidden off to the left until the wipe */
+}
+
+.anim .event__wipe-inner {
+  transform: translateX(100%);
 }
 
 /* No animation (reduced motion, or the animation script didn't load): no cream panel, so the details are never
@@ -537,7 +549,14 @@ html:not(.anim) .event__wipe,
   grid-row: 2;
   background: none;
   color: var(--cream);
-  clip-path: none;
+  transform: none;
+}
+
+html:not(.anim) .event__wipe-inner,
+.event--static .event__wipe-inner {
+  position: static;
+  display: block;
+  transform: none;
 }
 
 html:not(.anim) .event,
@@ -861,3 +880,16 @@ main:focus {
 .home-wipe__panel.is-cream { background-color: var(--cream); color: var(--black); }
 .home-wipe__panel.is-red   { background-color: var(--red);   color: var(--cream); }
 .home-wipe__panel.is-black { background-color: var(--black); color: var(--cream); }
+
+/* ---------- Animation performance ---------- */
+/* Tells the browser ahead of time which pieces get moved or faded by the scroll animations, so it can
+   prepare them (smoother on phones). */
+.strip__hole,
+.event__line,
+.event__sq,
+.event__free .char,
+.paint > div,
+.event__wipe,
+.event__wipe-inner {
+  will-change: transform, opacity;
+}
