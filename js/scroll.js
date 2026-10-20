@@ -389,8 +389,14 @@
   function half() { return zone.clientWidth / 2; }
   // How far the bar grows up: enough to pass the top of the screen by the end.
   function growUp() { return window.innerHeight * 0.15 + 48; }
-  // How far it grows down: to the bottom of the next section.
-  function growDown() { const sq = leftSq(); return zone.offsetHeight - (sq.top + sq.size); }
+  // How far it grows down: past the end of the film strip by a bit more than a screen, which is all it ever
+  // needs to cover. (It used to reach all the way through the Event section: a layer thousands of pixels
+  // tall, which made iPhones skip frames.) The Event section turns its own red on once this has covered.
+  function growDown() {
+    const sq = leftSq();
+    const stripBottom = strip.offsetTop + strip.offsetHeight;
+    return stripBottom - (sq.top + sq.size) + Math.max(window.innerHeight, window.screen.height || 0) * 1.35;
+  }
 
   if (reduceMotion) {
     if (nextSection) nextSection.classList.add("is-red");
@@ -398,14 +404,26 @@
     const STRETCH = 30; // share of the scroll spent stretching into a bar
     const FILL = 55;    // share spent growing the bar to fill the screen
 
+    // Once the bar has covered the screen, the Event section switches on its own red background underneath
+    // (invisible swap), and switches it off again when scrolling back up.
+    let eventRed = false;
+    function syncEventRed() {
+      const on = paint.progress() > 0.98;
+      if (on !== eventRed && nextSection) {
+        eventRed = on;
+        nextSection.classList.toggle("is-red", on);
+      }
+    }
+
     const paint = gsap.timeline({
       scrollTrigger: {
         trigger: strip,
         start: "bottom bottom", // right as the last row of squares has appeared
         end: "bottom 15%",
-        scrub: onPhone(0.3, 0.6),
+        scrub: 0.6, // same smoothing on phones as on desktop, so a fast flick can't make it jump ahead
         invalidateOnRefresh: true, // re-measure the squares after a resize
       },
+      onUpdate: function () { syncEventRed(); },
     });
 
     // The pieces are laid out once at their finished size and position; the animation only slides and
