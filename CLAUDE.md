@@ -60,7 +60,7 @@ Boise International Short Film Festival (BISFF) is a hub for filmmakers around t
 - Hosted on **Vercel** at **https://bisfilmfestival.com**, deployed from GitHub (push to the main branch → Vercel redeploys). Plain static site: no build command.
 - `vercel.json` adds security headers, including a strict Content-Security-Policy: only files from this site may load. So: **no inline `<script>` or `style="..."` in the HTML** (put code in `js/`, styles in `css/`), and no scripts, fonts or images from other servers unless the policy is updated on purpose.
 - `robots.txt` and `sitemap.xml` point search engines at https://bisfilmfestival.com/; update `lastmod` in the sitemap after big content changes.
-- Favicon: `assets/favicon.svg` (plus `favicon-32.png` and `apple-touch-icon.png`): the logo's "B" and square, black on red.
+- Favicon: `assets/favicon.svg` (plus `favicon-32.png` and `apple-touch-icon.png`): the logo's "B" (no square), black on red.
 - The user chose **not** to add Google event listing data or social link previews (for now).
 
 ## Build guidelines
