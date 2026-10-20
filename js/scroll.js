@@ -389,11 +389,14 @@
   function half() { return zone.clientWidth / 2; }
   // How far the bar grows up: enough to pass the top of the screen by the end.
   function growUp() { return window.innerHeight * 0.15 + 48; }
-  // How far it grows down: past the end of the film strip by a bit more than a screen, which is all it ever
-  // needs to cover. (It used to reach all the way through the Event section: a layer thousands of pixels
-  // tall, which made iPhones skip frames.) The Event section turns its own red on once this has covered.
+  // How far it grows down:
+  // - Computers: all the way to the bottom of the Event section. That long reach is what makes the bottom
+  //   edge sweep down fast while the top rises (the original look).
+  // - Phones: only a bit more than a screen past the film strip. A layer thousands of pixels tall made iPhones
+  //   skip frames here. The Event section turns its own red on once the bar has covered the screen.
   function growDown() {
     const sq = leftSq();
+    if (!isTouch) return zone.offsetHeight - (sq.top + sq.size);
     const stripBottom = strip.offsetTop + strip.offsetHeight;
     return stripBottom - (sq.top + sq.size) + Math.max(window.innerHeight, window.screen.height || 0) * 1.35;
   }
