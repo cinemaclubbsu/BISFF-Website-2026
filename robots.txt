@@ -1,0 +1,5 @@
+# Search engines may list every page on this site.
+User-agent: *
+Allow: /
+
+Sitemap: https://bisfilmfestival.com/sitemap.xml

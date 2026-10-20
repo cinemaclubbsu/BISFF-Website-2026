@@ -1,0 +1,860 @@
+/* ---------- Fonts ---------- */
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("../assets/fonts/InstrumentSans-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("../assets/fonts/InstrumentSans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------- Brand tokens ---------- */
+:root {
+  --peek: 4.5rem; /* how much of the page below the hero shows on first load (hints at scrolling) */
+  --red: #ff0000;
+  --cream: #fff8e8;
+  --black: #000000;
+  --yellow: #ffd84d; /* secondary accent: only decorative fills, or text on black (see CLAUDE.md) */
+
+  --font: "Instrument Sans", system-ui, sans-serif;
+  --color-fade: 600ms;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  overflow-x: clip; /* nothing (like the 1px overdraws) can ever make the page scroll sideways */
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-weight: 400;
+  font-size: 1rem;
+  line-height: 1.5;
+  background: var(--cream);
+  color: var(--black);
+}
+
+h1, h2, h3 {
+  font-weight: 700;
+}
+
+/* ---------- Hero ---------- */
+/* Each state is a logo color + background color pair. All pairs are at least 3.7:1. */
+.hero {
+  --hero-fg: var(--black);
+  --hero-bg: var(--red);
+
+  --bar-h: 3.5rem; /* height of the sliding bar */
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--peek));
+  min-height: calc(100svh - var(--peek)); /* shorter than the screen so the next section peeks in below */
+  overflow: hidden;
+  background-color: var(--hero-bg);
+  color: var(--hero-fg);
+  transition:
+    background-color var(--color-fade) ease,
+    color var(--color-fade) ease;
+}
+
+/* Ordered so both the background AND the logo color change at every step (including the loop back to 0). */
+.hero[data-state="0"] { --hero-fg: var(--black); --hero-bg: var(--red); }
+.hero[data-state="1"] { --hero-fg: var(--red);   --hero-bg: var(--cream); }
+.hero[data-state="2"] { --hero-fg: var(--cream); --hero-bg: var(--red); }
+.hero[data-state="3"] { --hero-fg: var(--red);   --hero-bg: var(--black); }
+.hero[data-state="4"] { --hero-fg: var(--black); --hero-bg: var(--cream); }
+.hero[data-state="5"] { --hero-fg: var(--cream); --hero-bg: var(--black); }
+
+.hero__center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  width: 100%;
+}
+
+.hero__logo {
+  margin: 0;
+  width: min(86vw, 60rem);
+  line-height: 0;
+}
+
+/* Small acronym logo, top left */
+.hero__mark {
+  position: absolute;
+  top: clamp(1rem, 3vw, 2rem);
+  left: clamp(1rem, 3vw, 2rem);
+  display: block;
+  width: clamp(6.5rem, 12vw, 9rem);
+  color: inherit;
+  line-height: 0;
+}
+
+.hero__mark svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  fill: currentColor;
+}
+
+.hero__mark:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 6px;
+}
+
+/* Sliding text bar: the hero's colors swapped (bar = logo color, text = hero background), so contrast
+   is always the same as the hero pair. Bold and 24px, so it counts as "large text" (3:1 needed). */
+.marquee {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: var(--bar-h);
+  overflow: hidden;
+  background-color: var(--hero-fg);
+  color: var(--hero-bg);
+  transition:
+    background-color var(--color-fade) ease,
+    color var(--color-fade) ease;
+}
+
+.marquee__track {
+  display: flex;
+  flex: none;
+  width: max-content;
+  animation: marquee-slide 56s linear infinite;
+}
+
+.hero.is-paused .marquee__track {
+  animation-play-state: paused;
+}
+
+.marquee__group {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0;
+}
+
+.marquee__item {
+  flex: none;
+  padding-inline: 0.5em;
+  font-weight: 700;
+  font-size: 1.5rem;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Small square between repeats (echoes the square in the logo) */
+.marquee__square {
+  flex: none;
+  width: 0.35em;
+  height: 0.35em;
+  margin-inline: 0.25em;
+  font-size: 1.5rem;
+  background-color: currentColor;
+}
+
+/* Two identical groups, so sliding exactly one group's width (half the track) loops with no jump */
+@keyframes marquee-slide {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.hero__logo svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  fill: currentColor;
+}
+
+/* Pause / play control (required so the color cycle and sliding bar can be stopped: WCAG 2.2.2).
+   Small icon button that fades in after 5 seconds so it doesn't compete with the first impression.
+   It stays in the page the whole time, so keyboard and screen reader users can reach it immediately,
+   and keyboard focus shows it right away. */
+.hero__toggle {
+  position: absolute;
+  right: 0.75rem;
+  bottom: calc(var(--bar-h) + 0.75rem); /* sits just above the sliding bar */
+  display: grid;
+  place-items: center;
+  width: 2.75rem;  /* 44px tap area; the visible circle is smaller (see ::before) */
+  height: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0;
+  animation: toggle-fade-in 600ms ease 5s forwards;
+}
+
+.hero__toggle::before {
+  content: "";
+  position: absolute;
+  inset: 0.375rem; /* 32px circle inside the 44px tap area */
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.hero__toggle:hover::before {
+  background: currentColor;
+}
+
+.hero__toggle:hover {
+  color: inherit;
+}
+
+.hero__toggle:hover .hero__toggle-icon {
+  fill: var(--hero-bg);
+}
+
+.hero__toggle:focus-visible {
+  opacity: 1;
+  outline: 3px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+@keyframes toggle-fade-in {
+  to { opacity: 1; }
+}
+
+/* Visible to screen readers only: gives the icon button its name ("Pause colors" / "Play colors") */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hero__toggle-icon {
+  position: relative;
+  width: 0.875rem;
+  height: 0.875rem;
+  fill: currentColor;
+}
+
+.hero__toggle .icon-play { display: none; }
+.hero__toggle.is-paused .icon-play { display: inline; }
+.hero__toggle.is-paused .icon-pause { display: none; }
+
+/* Calmer for people who ask for less motion: no fade (the cycle also starts paused, see hero.js) */
+@media (prefers-reduced-motion: reduce) {
+  .hero,
+  .marquee {
+    transition: none;
+  }
+
+  .hero__toggle {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* Phones: bigger logo, and a slightly taller peek of the page below. */
+@media (max-width: 600px) {
+  :root {
+    --peek: 6rem;
+  }
+
+  .hero__center {
+    padding-inline: 0.75rem;
+  }
+
+  .hero__logo {
+    width: min(94vw, 60rem);
+  }
+}
+
+/* ---------- Blurb ---------- */
+/* Scroll animations for everything below the hero live in js/scroll.js (GSAP + ScrollTrigger). */
+/* A full screen tall with the two lines centered, so they sit in the middle while the section is pinned. */
+.blurb {
+  display: flex;
+  align-items: center;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1rem, 5vw, 4rem);
+}
+
+/* Blurb and the sections after it share one background. js/scroll.js blends --page-bg / --page-fg
+   from cream/black to black/cream as you scroll past the Blurb, so there's no hard line between sections.
+   Cream text on black ~19:1; "alive." stays red, red on black ~5.3:1. */
+:root {
+  --page-bg: var(--cream);
+  --page-fg: var(--black);
+}
+
+body,
+.blurb,
+.strip {
+  background-color: var(--page-bg);
+}
+
+.blurb,
+.strip {
+  color: var(--page-fg);
+}
+
+.blurb__inner {
+  max-width: 64rem;
+  text-align: left;
+}
+
+/* Heading and second line share one look: bold, all caps, big */
+.blurb__heading,
+.blurb__line {
+  margin: 0;
+  font-size: clamp(2.5rem, 7vw, 5.5rem);
+  font-weight: 700;
+  line-height: 1.02;
+  text-transform: uppercase; /* headings are all caps (see CLAUDE.md) */
+  text-wrap: balance;
+}
+
+.blurb__line {
+  margin-top: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+/* Starts hidden only once the animation script is confirmed running (it adds .anim to <html>),
+   so text can't get stuck invisible if GSAP fails to load. Screen readers still read it. */
+.anim [data-reveal],
+.anim .strip__hole,
+.anim .event__info {
+  opacity: 0;
+}
+
+/* "alive." is turned red by js/scroll.js. Red on cream is ~3.8:1, which passes because this is very large bold text;
+   the in-between shades of the fade are darker reds, which contrast even more. */
+
+/* ---------- Film strip ---------- */
+/* Squares down both edges like the holes along a strip of 35mm film (they echo the squares in the logo).
+   js/strip.js fills each column with as many squares as fit; js/scroll.js fades them in, top to bottom,
+   once the page has turned black. */
+.strip {
+  --hole: 1.3125rem;     /* square size (21px) */
+  --hole-gap: 15.95px;   /* space between squares (based on 35mm film perforation spacing, tightened 2px) */
+  --hole-inset: clamp(0.75rem, 3vw, 2rem); /* distance from the screen edge */
+
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 130vh;
+  min-height: 130svh;
+  padding: 25svh calc(var(--hole-inset) + var(--hole) + clamp(1.25rem, 5vw, 4rem));
+}
+
+.strip__holes {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--hole-gap);
+  padding-block: var(--hole-gap);
+  overflow: hidden;
+}
+
+.strip__holes--left { left: var(--hole-inset); }
+.strip__holes--right { right: var(--hole-inset); }
+
+.strip__hole {
+  flex: none;
+  width: var(--hole);
+  height: var(--hole);
+  background-color: var(--red);
+}
+
+/* Cream on black ~19:1. Sits above the red paint layer. */
+.strip__text {
+  position: relative;
+  z-index: 3;
+  max-width: 44rem;
+  margin: 0;
+  font-size: clamp(1.4375rem, 3vw, 2.25rem);
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+@media (max-width: 600px) {
+  .strip {
+    --hole: 0.9375rem; /* 15px */
+  }
+}
+
+/* ---------- Paint (film strip into red) ---------- */
+/* Red pieces drawn on top of the strip and the next section. js/scroll.js places them over the bottom two
+   squares, stretches them into one bar, then grows the bar until it covers the screen. */
+.paint-zone {
+  position: relative;
+}
+
+.paint {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.paint > div {
+  position: absolute;
+  background-color: var(--red);
+  opacity: 0;
+}
+
+.paint__bar {
+  left: 0;
+  right: 0;
+}
+
+/* Reduced motion (or no animation script): no painting, the Event section is simply red. */
+.event.is-red {
+  background-color: var(--red);
+}
+
+/* ---------- Event details ---------- */
+/* See-through, so the red paint behind it shows; sits above the paint layer. A full screen tall,
+   with a rule-of-thirds grid of thin cream lines and the date and place in the middle box.
+   Cream on red is ~3.8:1, which only passes for large text, so the text never goes below 24px. */
+.event {
+  --third-x: 33.333%; /* where the vertical lines sit (from each side) */
+  --third-y: 33.333%; /* where the horizontal lines sit (from top and bottom) */
+  --line: 2px;        /* line thickness */
+
+  position: relative;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  height: 100vh;
+  height: 100svh;
+  color: var(--cream);
+}
+
+.event__grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.event__line {
+  position: absolute;
+  background-color: var(--cream);
+}
+
+.event__line--v {
+  top: 0;
+  bottom: 0;
+  width: var(--line);
+  transform-origin: bottom center; /* they rise from the bottom */
+}
+
+.event__line--v1 { left: calc(var(--third-x) - var(--line) / 2); }
+.event__line--v2 { right: calc(var(--third-x) - var(--line) / 2); }
+
+.event__line--h {
+  left: 0;
+  right: 0;
+  height: var(--line);
+}
+
+.event__line--h1 { top: calc(var(--third-y) - var(--line) / 2); transform-origin: left center; }     /* comes in from the left */
+.event__line--h2 { bottom: calc(var(--third-y) - var(--line) / 2); transform-origin: right center; } /* comes in from the right */
+
+/* Fits inside the middle box of the grid */
+.event__info {
+  position: relative;
+  box-sizing: border-box;
+  width: calc(100% - 2 * var(--third-x));
+  max-height: calc(100% - 2 * var(--third-y));
+  padding: 1rem clamp(0.75rem, 2vw, 1.5rem);
+  text-align: center;
+}
+
+.event__date,
+.event__place {
+  margin: 0;
+  font-size: clamp(1.5rem, 2vw, 2rem); /* 24px minimum (large text) */
+  font-weight: 400;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.event__date {
+  margin-bottom: 0.45em;
+}
+
+/* Wipe layer: a cream panel revealed left to right by js/scroll.js (clip-path), covering the grid and text.
+   Red on cream is ~3.8:1: fine here because the heading is large, bold text. */
+.event__wipe {
+  position: absolute;
+  inset: -1px 0; /* 1px overdraw top and bottom so no sliver of the red paint underneath shows at the seams */
+  overflow: hidden; /* the growing squares must never make the page scroll sideways */
+  display: grid;
+  place-items: center;
+  background-color: var(--cream);
+  color: var(--red);
+}
+
+.anim .event__wipe {
+  clip-path: inset(0 100% 0 0); /* hidden until the wipe */
+}
+
+/* No animation (reduced motion, or the animation script didn't load): no cream panel, so the details are never
+   covered. "Free to the public" just sits under them on the red (cream text, large and bold: ~3.8:1 passes). */
+html:not(.anim) .event__wipe,
+.event--static .event__wipe {
+  position: static;
+  grid-row: 2;
+  background: none;
+  color: var(--cream);
+  clip-path: none;
+}
+
+html:not(.anim) .event,
+.event--static {
+  grid-template-rows: auto auto;
+  align-content: center;
+}
+
+html:not(.anim) .event__info,
+.event--static .event__info {
+  max-height: none;
+}
+
+/* "Free to the public": heading style, centered where the event details were */
+.event__free {
+  max-width: calc(100% - 2 * var(--third-x));
+  margin: 0;
+  padding: 0.75rem;
+  font-size: clamp(2.5rem, 6vw, 5.5rem);
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase; /* headings are all caps (see CLAUDE.md) */
+  text-wrap: balance;
+}
+
+.anim .event:not(.event--static) .event__free {
+  opacity: 0;
+}
+
+/* Squares the "Free to the public" letters pull into. js/scroll.js grows the red one to fill the screen,
+   then the black one out of its middle. */
+.event__squares {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.event__sq {
+  grid-area: 1 / 1;
+  width: 4.5rem;
+  height: 4.5rem;
+  transform: scale(0);
+}
+
+.event__sq--red { background-color: var(--red); }
+.event__sq--black { background-color: var(--black); }
+
+/* Letters of "Free to the public", split by js/scroll.js so they can move on their own */
+.event__free .word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.event__free .char {
+  display: inline-block;
+}
+
+/* No animation: no squares */
+html:not(.anim) .event__squares,
+.event--static .event__squares {
+  display: none;
+}
+
+/* Medium screens: a slightly wider middle box so the text still fits */
+@media (max-width: 1000px) {
+  .event {
+    --third-x: 20%;
+  }
+}
+
+/* Phones: vertical lines near the edges (agreed), true thirds stay for the horizontal lines */
+@media (max-width: 600px) {
+  .event {
+    --third-x: 10%;
+  }
+}
+
+/* Very small phones: a touch wider still, so the text fits between the lines */
+@media (max-width: 360px) {
+  .event {
+    --third-x: 6%;
+  }
+
+  .event__info {
+    padding-inline: 0.5rem;
+  }
+}
+
+/* ---------- Closing section ---------- */
+/* Black, carrying on from the black square fill. Cream on black ~19:1; red on black ~5.3:1. */
+/* A footer-like strip: the heading sits just above the corner logo and Instagram icon. It doesn't need to be
+   a full screen tall: the Event section above it ends fully black, so the black just carries on. */
+.finale {
+  --corner: clamp(1rem, 3vw, 2rem);    /* distance of the corner logo and icon from the screen edges */
+  --logo-w: clamp(6.5rem, 12vw, 9rem); /* corner logo width */
+  --gap: clamp(2rem, 3.5vw, 2.75rem); /* space between the heading and the logo row */
+
+  position: relative;
+  z-index: 4; /* sits over the paint layer's bottom edge */
+  margin-top: -1px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding:
+    clamp(3rem, 8vw, 6rem)
+    var(--corner)
+    calc(var(--corner) + var(--logo-w) * 0.261 + var(--gap)); /* corner + logo height (380/1455 of its width) + gap */
+  /* Line the heading's first letter up with the "B" of the logo: the logo's artwork starts 20/1455 of its
+     width in from its edge (see .finale__heading for the letter's own side spacing) */
+  padding-left: calc(var(--corner) + var(--logo-w) * 0.01375);
+  background-color: var(--black);
+  color: var(--cream);
+}
+
+.finale__heading {
+  position: relative;
+  z-index: 0; /* keeps the red wipe bars (z-index -1) above the black but behind the text */
+  max-width: 64rem;
+  margin: 0 0 0 -0.03em; /* the "C" has a little built-in space on its left; this cancels it */
+  font-size: clamp(2.25rem, 6vw, 5rem);
+  font-weight: 700;
+  line-height: 1.2; /* room for the underline under "here" */
+  text-align: left;
+  text-transform: uppercase; /* headings are all caps (see CLAUDE.md) */
+  text-wrap: balance;
+}
+
+/* "here" is the link: always underlined (so it isn't marked by color alone), turns red on hover or keyboard focus */
+.finale__link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.12em;
+  transition: color 200ms ease;
+}
+
+.finale__link:hover,
+.finale__link:focus-visible {
+  color: var(--red);
+}
+
+.finale__link:focus-visible {
+  outline: 3px solid var(--cream);
+  outline-offset: 4px;
+}
+
+/* Red rectangle that wipes the heading on and off (built by js/scroll.js) */
+.finale__wipes {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+}
+
+.finale__wipe {
+  position: absolute;
+  background-color: var(--red);
+  transform: scaleX(0);
+}
+
+/* Instagram, bottom-right: 44px+ tap area */
+.finale__social {
+  position: absolute;
+  right: var(--corner);
+  bottom: calc(var(--corner) + var(--logo-w) * 0.1305 - 0.875rem); /* centered on the logo row */
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: -0.5rem;
+  color: var(--cream);
+  transition: color 200ms ease;
+}
+
+.finale__social svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.finale__social:hover,
+.finale__social:focus-visible {
+  color: var(--red);
+}
+
+.finale__social:focus-visible {
+  outline: 3px solid var(--cream);
+  outline-offset: 2px;
+}
+
+/* Bottom-left logo: back to the top */
+.finale__home {
+  position: absolute;
+  left: var(--corner);
+  bottom: var(--corner);
+  display: block;
+  width: var(--logo-w);
+  color: var(--cream);
+  line-height: 0;
+  transition: color 200ms ease;
+}
+
+.finale__home svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  fill: currentColor;
+}
+
+.finale__home:hover,
+.finale__home:focus-visible {
+  color: var(--red);
+}
+
+.finale__home:focus-visible {
+  outline: 3px solid var(--cream);
+  outline-offset: 6px;
+}
+
+/* Both corner logos: invisible padding makes the tap area at least 44px tall without changing the look */
+.hero__mark,
+.finale__home {
+  box-sizing: content-box;
+  padding: 0.625rem;
+  margin: -0.625rem;
+}
+
+/* "Back to top" moves keyboard focus to <main>; it doesn't need a visible ring there */
+main:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finale__link,
+  .finale__home,
+  .finale__social {
+    transition: none;
+  }
+}
+
+/* ---------- "Scroll for more" hint ---------- */
+/* Sits in the cream strip at the bottom of the first screen. js/hint.js adds .is-visible after 7 idle seconds.
+   Black on cream ~19:1. */
+.scroll-hint {
+  position: fixed;
+  z-index: 10;
+  left: 50%;
+  bottom: calc(var(--peek) / 2);
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--black);
+  opacity: 0;
+  transform: translate(-50%, 50%);
+  transition: opacity 600ms ease;
+  pointer-events: none;
+}
+
+.scroll-hint.is-visible {
+  opacity: 1;
+}
+
+.scroll-hint__arrow {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: currentColor;
+}
+
+.scroll-hint.is-visible .scroll-hint__arrow {
+  animation: hint-bob 1.6s ease-in-out infinite;
+}
+
+@keyframes hint-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(0.3rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-hint {
+    transition: none;
+  }
+
+  .scroll-hint.is-visible .scroll-hint__arrow {
+    animation: none;
+  }
+}
+
+/* ---------- "Back to top" transition screen ---------- */
+/* One full-screen panel in a random brand color (picked by js/scroll.js on each click) with the BISFF logo
+   centered in a contrasting color. It wipes in left to right, then wipes off to the right. */
+.home-wipe {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  pointer-events: none;
+  visibility: hidden; /* js/scroll.js shows it only while the transition plays */
+}
+
+.home-wipe__panel {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  clip-path: inset(0 100% 0 0);
+}
+
+.home-wipe__panel svg {
+  display: block;
+  width: min(60vw, 30rem);
+  height: auto;
+  fill: currentColor;
+}
+
+/* Color pairs: panel color with a high-contrast logo color */
+.home-wipe__panel.is-cream { background-color: var(--cream); color: var(--black); }
+.home-wipe__panel.is-red   { background-color: var(--red);   color: var(--cream); }
+.home-wipe__panel.is-black { background-color: var(--black); color: var(--cream); }
