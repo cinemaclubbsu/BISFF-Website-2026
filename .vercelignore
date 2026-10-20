@@ -1,0 +1,3 @@
+# Files in the repo that should not be published on the live site
+CLAUDE.md
+.claude
