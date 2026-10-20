@@ -24,12 +24,16 @@
   const isTouch = window.matchMedia("(pointer: coarse)").matches || ScrollTrigger.isTouch === 1;
 
   // --- Touch scrolling ------------------------------------------------------
-  // On phones, let GSAP handle the scrolling itself so it stays exactly in step with the pinned sections
-  // (otherwise iPhones can stutter where a section starts holding still). This also keeps Safari's toolbar
-  // from sliding in and out mid-animation, which changes the screen height. When the screen height does
-  // change only because a toolbar moved, don't re-measure everything (that causes jumps).
+  // Phones keep the browser's own touch scrolling (with its natural momentum: taking it over made flicks feel
+  // short and heavy on iPhone). When the screen height changes only because a toolbar slid in or out,
+  // don't re-measure everything, which would cause jumps.
   ScrollTrigger.config({ ignoreMobileResize: true });
-  if (isTouch) ScrollTrigger.normalizeScroll(true);
+
+  // On phones, the held ("pinned") moments are shorter and the scroll-tied animations follow the finger more
+  // directly, since one screen of scrolling is a short swipe there.
+  function onPhone(phoneValue, otherValue) {
+    return isTouch ? phoneValue : otherValue;
+  }
 
   // --- Smooth scrolling (Lenis) -------------------------------------------
   // Mouse wheel and trackpad scrolling glide instead of jumping. The browser's normal scrolling stays
@@ -62,7 +66,7 @@
   const blurb = document.querySelector(".blurb");
   const alive = blurb && blurb.querySelector(".blurb__alive");
   const marquee = document.querySelector(".marquee");
-  const PIN_SCREENS = 1.8; // how long the moment lasts, in screen-heights of scrolling
+  const PIN_SCREENS = onPhone(1.1, 1.8); // how long the moment lasts, in screen-heights of scrolling
   const DARK_AT = 0.62;    // point in the moment (0 to 1) where the page shifts to black
 
   let darkFade = null;
@@ -104,7 +108,7 @@
         end: function () { return "+=" + Math.round(window.innerHeight * PIN_SCREENS); },
         pin: true,
         anticipatePin: 1, // switch into place a hair early so it doesn't jump on fast scrolls
-        scrub: 0.5,
+        scrub: onPhone(0.15, 0.5),
         invalidateOnRefresh: true,
         onUpdate: function (self) { setDark(self.progress >= DARK_AT); },
       },
@@ -142,7 +146,7 @@
   const eventFree = eventSection && eventSection.querySelector(".event__free");
   const vLines = eventSection ? eventSection.querySelectorAll(".event__line--v") : [];
   const hLines = eventSection ? eventSection.querySelectorAll(".event__line--h") : [];
-  const EVENT_SCREENS = 5.2; // how long the hold lasts, in screen-heights of scrolling
+  const EVENT_SCREENS = onPhone(3.2, 5.2); // how long the hold lasts, in screen-heights of scrolling
   const redSquare = eventSection && eventSection.querySelector(".event__sq--red");
   const blackSquare = eventSection && eventSection.querySelector(".event__sq--black");
 
@@ -241,7 +245,7 @@
           end: function () { return "+=" + Math.round(window.innerHeight * EVENT_SCREENS); },
           pin: true,
           anticipatePin: 1,
-          scrub: 0.8,
+          scrub: onPhone(0.2, 0.8),
           invalidateOnRefresh: true,
           onUpdate: function (self) {
             if (eventTl) showFree(self.progress >= eventTl.labels.wiped / eventTl.duration());
@@ -332,7 +336,7 @@
         trigger: strip,
         start: "top 45%",      // starts once the strip is well onto the screen (the page is black by then)
         end: "bottom bottom",  // last row lands as the end of the strip reaches the bottom of the screen
-        scrub: reduceMotion ? true : 0.6,
+        scrub: reduceMotion ? true : onPhone(0.15, 0.6),
       },
     });
     // Each row starts one step after the row above it; left and right squares in a row go together.
@@ -392,7 +396,7 @@
         trigger: strip,
         start: "bottom bottom", // right as the last row of squares has appeared
         end: "bottom 15%",
-        scrub: 0.6,
+        scrub: onPhone(0.15, 0.6),
         invalidateOnRefresh: true, // re-measure the squares after a resize
       },
     });
