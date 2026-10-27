@@ -5,7 +5,7 @@ Website for the Boise International Short Film Festival (BISFF), run by the Bois
 ## Event facts (use exactly as written)
 
 - **Date:** November 8th, 2026
-- **Time:** 5 PM
+- **Time:** 6 PM
 - **Location:** SPEC Theater, 1700 W University Dr, Boise, ID 83725 (Westside of the Boise State Student Union Building)
 - **Cost:** Free. No tickets or registration needed; people can just come.
 - **Film submissions:** CLOSED (deadline has passed). Do not promote submitting. FilmFreeway page (linked from the closing section as a place to check out the festival, not as a call to submit): https://filmfreeway.com/BoiseInternationalShortFilmFestival-1
